@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Chatbot UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #chat-box { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; }
+    .user { color: blue; }
+    .bot { color: green; }
+    #message { width: 80%; padding: 8px; }
+    #send { padding: 8px; }
+  </style>
+</head>
+<body>
+  <h2>🧠 Simple Chatbot</h2>
+  <div id="chat-box"></div>
+  <input type="text" id="message" placeholder="Type your message here...">
+  <button id="send">Send</button>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    const messageInput = document.getElementById("message");
+    const sendButton = document.getElementById("send");
+
+    let conversationId = null; // Track the conversation ID
+
+    sendButton.onclick = async () => {
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      // Show user's message
+      chatBox.innerHTML += `<div class='user'><strong>You:</strong> ${message}</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+      messageInput.value = "";
+
+      // Send to backend with conversation_id if available
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          conversation_id: conversationId,
+          max_length: 500,
+          temperature: 0.7
+        })
+      });
+
+      const data = await response.json();
+      const reply = data.reply || "(No reply)";
+
+      // Save conversation ID for next messages
+      if (data.conversation_id) {
+        conversationId = data.conversation_id;
+      }
+
+      // Show bot's reply
+      chatBox.innerHTML += `<div class='bot'><strong>Bot:</strong> ${reply}</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    // Allow Enter key to send
+    messageInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") sendButton.click();
+    });
+  </script>
+</body>
+</html>

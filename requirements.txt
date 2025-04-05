@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlmodel
+python-dotenv
+requests
+groq
+psycopg2-binary
+sqlalchemy
+python-dotenv
