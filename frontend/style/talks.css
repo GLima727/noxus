@@ -1,0 +1,30 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  
+  .conversation {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 20px;
+  }
+  
+  .message {
+    margin-left: 20px;
+  }
+  
+  .user {
+    color: blue;
+  }
+  
+  .assistant {
+    color: green;
+  }
+  
+  .feedback {
+    font-style: italic;
+    font-size: 0.9em;
+    color: #555;
+    margin-left: 20px;
+  }
+  

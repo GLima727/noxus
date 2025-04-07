@@ -1,0 +1,49 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  
+  #chat-box {
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 300px;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+  }
+  
+  .user {
+    color: blue;
+  }
+  
+  .assistant {
+    color: green;
+  }
+  
+  #message {
+    width: 80%;
+    padding: 8px;
+  }
+  
+  #send {
+    padding: 8px;
+  }
+  
+  .feedback {
+    margin-top: 10px;
+    padding: 10px;
+    min-height: 40px;
+  }
+  
+  .feedback-form {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+    display: block;
+  }
+  
+  .feedback-form button.selected {
+    background-color: #7f807e;
+    color: white;
+    border: 1px solid #0056b3;
+  }
+  

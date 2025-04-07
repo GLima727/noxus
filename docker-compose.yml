@@ -4,7 +4,7 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"  # Adjust port if needed
+      - "8000:8000"  
     volumes:
       - .:/app
     environment:
@@ -18,7 +18,7 @@ services:
 
   db:
     image: postgres:15
-    restart: unless-stopped
+    restart: unless-stopped #will always try to restart the container db if it fails
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
