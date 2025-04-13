@@ -16,7 +16,7 @@ load_dotenv()
 router = APIRouter()
 
 
-GROQ_API_KEY = os.getenv("HF_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
     raise ValueError("Missing GROQ_API_KEY in environment variables")
