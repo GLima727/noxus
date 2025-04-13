@@ -28,5 +28,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  test:
+    build:
+      context: .
+    command: ["pytest", "tests/"]
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/noxus_test
+      - PYTHONPATH=/app
+
 volumes:
   postgres_data:

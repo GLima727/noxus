@@ -7,9 +7,6 @@ import os
 
 router = APIRouter()
 
-FRONTEND_PATH = os.path.join(os.path.dirname(__file__), "..", "frontend")
-
-
 def get_db():
     db = SessionLocal()
     try:
@@ -19,7 +16,7 @@ def get_db():
 
 @router.get("/talks", response_class=HTMLResponse)
 def serve_conversations_page():
-    return FileResponse(os.path.join(FRONTEND_PATH, "talks.html"))
+    return FileResponse(os.path.join(os.getenv("FRONTEND_PATH"), "talks.html"))
 
 
 @router.get("/talks-data")

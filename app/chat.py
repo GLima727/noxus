@@ -29,53 +29,6 @@ class ChatRequest(BaseModel):
     max_length: int = 100
     temperature: float = 0.7
 
-def addConfigurations(db, conversation):
-    system_context = []
-
-    # Load and assign default prompt profile
-    with open("config/default_prompt.txt", "r") as f:
-        prompt_text = f.read().strip()
-
-    prompt = db.query(PromptProfile).filter_by(system_prompt=prompt_text).first()
-    if not prompt:
-        prompt = PromptProfile(name="Default Prompt", system_prompt=prompt_text)
-        db.add(prompt)
-        db.commit()
-        db.refresh(prompt)
-
-    conversation.prompt_profile_id = prompt.id
-    db.commit()
-    print(f"🧠 Attached PromptProfile {prompt.id} to conversation {conversation.id}")
-
-    # Add prompt to system_context
-    system_context.append({
-        "role": "system",
-        "content": prompt.system_prompt
-    })
-
-    # Load and assign knowledge sources
-    with open("config/knowledge_sources.txt", "r") as f:
-        sources = [line.strip() for line in f if line.strip()]
-
-    if sources:
-        system_context.append({
-            "role": "system",
-            "content": "The following sources are for your knowledge context:"
-        })
-
-    for src in sources:
-        ks = KnowledgeSource(content=src, conversation_id=conversation.id)
-        db.add(ks)
-        system_context.append({
-            "role": "system",
-            "content": src
-        })
-
-    db.commit()
-    print(f"📚 Attached {len(sources)} knowledge sources to conversation {conversation.id}")
-
-    return system_context
-
 
 @router.post("/chat")
 async def chat(req: ChatRequest):
@@ -94,6 +47,7 @@ async def chat(req: ChatRequest):
                 raise HTTPException(status_code=404, detail="Conversation not found")
             print(f"🔄 Continuing conversation {conversation.id}")
         else:
+            # Create a new conversation
             conversation = Conversation()
             db.add(conversation)
             db.commit()
@@ -101,6 +55,7 @@ async def chat(req: ChatRequest):
             print(f"🆕 Created new conversation {conversation.id}")
         
 
+        # Add default prompt and knowledge sources
         config_history = addConfigurations(db, conversation)
         print(f"🧩 Added configurations to conversation {conversation.id}")
 
@@ -113,7 +68,7 @@ async def chat(req: ChatRequest):
         db.commit()
         print(f"💾 Saved user message to conversation {conversation.id}")
 
-        # Build full message history
+        # Build full message history (including system context)
         history = config_history + [
             {"role": msg.role, "content": msg.content}
             for msg in db.query(Message)
@@ -122,15 +77,20 @@ async def chat(req: ChatRequest):
                         .all()
         ]
 
-        completion = client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=history,
-            temperature=req.temperature,
-            max_tokens=req.max_length,
-            top_p=1,
-            stream=False,
-        )
-
+        # Send the request to the Groq API
+        try:
+            completion = client.chat.completions.create(
+                model="llama3-70b-8192",
+                messages=history,
+                temperature=req.temperature,
+                max_tokens=req.max_length,
+                top_p=1,
+                stream=False,
+            )
+        except Exception as e:
+            print(f"❌ Error calling Groq API: {e}")
+            raise HTTPException(status_code=502, detail="Groq API failed. Please try again.")
+    
         bot_reply = completion.choices[0].message.content
         print(f"🤖 Bot reply: {bot_reply}")
 
@@ -148,7 +108,9 @@ async def chat(req: ChatRequest):
             "conversation_id": str(conversation.id),
             "message_id": str(bot_msg.id) 
         }
-
+    except HTTPException as http_exc:
+        raise http_exc
+    
     except Exception as e:
         db.rollback()
         print("❌ Exception:", e)
@@ -180,8 +142,61 @@ async def submit_feedback(
 
         db.commit()
         return {"success": True, "message_id": message_id}
+    
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
+
+def addConfigurations(db, conversation, prompt_path="config/default_prompt.txt", sources_path="config/knowledge_sources.txt"):
+    system_context = []
+
+    # Read default prompt from file
+    with open(prompt_path, "r") as f:
+        prompt_text = f.read().strip()
+
+    prompt = db.query(PromptProfile).filter_by(system_prompt=prompt_text).first()
+    if not prompt:
+        prompt = PromptProfile(name="Default Prompt", system_prompt=prompt_text)
+        db.add(prompt)
+        db.commit()
+        db.refresh(prompt)
+
+    conversation.prompt_profile_id = prompt.id
+    db.commit()
+    print(f"🧠 Attached PromptProfile {prompt.id} to conversation {conversation.id}")
+
+    # Add prompt to system context
+    system_context.append({
+        "role": "system",
+        "content": prompt.system_prompt
+    })
+
+    # Read knowledge sources from file
+    with open(sources_path, "r") as f:
+        sources = [line.strip() for line in f if line.strip()]
+
+    # Add default prompt for knowledge sources
+    if sources:
+        system_context.append({
+            "role": "system",
+            "content": "The following sources are for your knowledge context:"
+        })
+
+    # Add each knowledge source to the database and system context
+    for src in sources:
+        ks = KnowledgeSource(content=src, conversation_id=conversation.id)
+        db.add(ks)
+        system_context.append({
+            "role": "system",
+            "content": src
+        })
+
+    db.commit()
+    print(f"📚 Attached {len(sources)} knowledge sources to conversation {conversation.id}")
+
+    return system_context
