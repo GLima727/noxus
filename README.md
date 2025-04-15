@@ -118,3 +118,23 @@ These pages are rendered using static HTML served by FastAPI, and they connect t
 Our project, as mentioned before, supports different Groq model settings and configurations. Each configuration has a letter assigned to a configuration variant (`A`, `B`, etc.).
 To evaluate the effectiveness of different language model configurations we can collect the amount of feedback given to each model configuration and evaluate which model has the most positive or negative reviews (in the form of thumbs up or down).
 For custom reviews we can utilize the LLM to evaluate if the review is positive or not.
+
+## Conversation and Configuration Evaluation
+
+To assess the effectiveness of the chatbot's responses, this project includes a built-in evaluation framework powered by another LLM (via Groq API). The goal is to automatically rate the quality of each conversation and compare performance across different chatbot configurations.
+
+The quality of each conversation is based on:
+
+- **Relevance**: Are the assistant's responses aligned with the user's intent?
+- **Clarity**: Are the replies easy to understand and well-structured?
+- **Helpfulness**: Do the answers solve or meaningfully respond to the user's query?
+
+The LLM returns a **score from 1 to 10** and a brief **commentary** explaining the evaluation.
+
+To evaluate each configuration associated with one or more conversations, the evaluation framework computes the **average score per configuration**. This allows for easy identification of which model variant leads to higher quality interactions.
+
+Execute this command as the app is running:
+
+```bash
+docker compose exec app python app/scripts/evaluate.py
+```
