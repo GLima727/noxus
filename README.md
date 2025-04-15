@@ -113,3 +113,8 @@ The application has two main user-facing pages:
 
 These pages are rendered using static HTML served by FastAPI, and they connect to backend endpoints via JavaScript to send/receive messages or retrieve conversation data.
 
+## A/B Testing
+
+Our project, as mentioned before, supports different Groq model settings and configurations. Each configuration has a letter assigned to a configuration variant (`A`, `B`, etc.).
+To evaluate the effectiveness of different language model configurations we can collect the amount of feedback given to each model configuration and evaluate which model has the most positive or negative reviews (in the form of thumbs up or down).
+For custom reviews we can utilize the LLM to evaluate if the review is positive or not.

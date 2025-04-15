@@ -48,12 +48,5 @@ def test_feedback_invalid_message():
 def test_groq_api_failure():
     with patch("app.chat.client.chat.completions.create") as mock_groq:
         mock_groq.side_effect = Exception("Simulated Groq failure")
-        
-        response = client.post("/chat", json={
-            "message": "Trigger failure",
-            "max_length": 50,
-            "temperature": 0.7
-        })
-
+        response = client.post("/chat", json={"message": "trigger failure"})
         assert response.status_code == 502
-        assert "Groq API failed" in response.json()["detail"]

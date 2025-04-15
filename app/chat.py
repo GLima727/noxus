@@ -83,7 +83,7 @@ async def chat(req: ChatRequest):
 
         # Send the request to the Groq API
         completion = create_groq_model(history, conversation.config)
-    
+        
         bot_reply = completion.choices[0].message.content
         print(f"🤖 Bot reply: {bot_reply}")
 
@@ -145,11 +145,11 @@ async def submit_feedback(
         db.close()
 
 
-def addConfigurations(db, conversation, variant):
+def addConfigurations(db, conversation, variant, config_path="config/model_variants.json"):
     system_context = []
 
     # Load group-specific model config including prompt and knowledge sources
-    with open("config/model_variants.json") as f:
+    with open(config_path) as f:
         MODEL_CONFIGS = json.load(f)
 
     config = MODEL_CONFIGS.get(variant)
@@ -217,4 +217,4 @@ def create_groq_model(history, variant):
         return completion
     except Exception as e:
         print(f"❌ Error calling Groq API config {variant}: {e}")
-        raise
+        raise HTTPException(status_code=502, detail="Groq API failed. Please try again.")
