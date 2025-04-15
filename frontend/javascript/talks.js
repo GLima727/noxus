@@ -7,7 +7,7 @@ async function loadConversations() {
     conversations.forEach(convo => {
       const convoDiv = document.createElement('div');
       convoDiv.className = 'conversation';
-      convoDiv.innerHTML = `<h2>Conversation ID: ${convo.conversation_id}</h2>`;
+      convoDiv.innerHTML = `<h2>Conversation ID: ${convo.conversation_id}</h2> <h2> Model: ${convo.config}</h2> `;
   
       convo.messages.forEach(msg => {
         const msgDiv = document.createElement('div');

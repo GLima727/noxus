@@ -55,8 +55,8 @@ async def chat(req: ChatRequest):
             db.refresh(conversation)
             print(f"🆕 Created new conversation {conversation.id}")
         
-        #Choose 
-        conversation.config = 'A'
+        # Choose model config variant 
+        conversation.config = os.getenv("DEFAULT_MODEL_GROUP", "A")
 
         # Add default prompt and knowledge sources
         config_history = addConfigurations(db, conversation, conversation.config)

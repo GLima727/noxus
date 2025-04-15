@@ -28,6 +28,7 @@ def get_conversations_data(db: Session = Depends(get_db)):
         messages = db.query(Message).filter_by(conversation_id=convo.id).order_by(Message.timestamp).all()
         data.append({
             "conversation_id": str(convo.id),
+            "config": convo.config,
             "started_at": convo.started_at.isoformat(),
             "messages": [
                 {
