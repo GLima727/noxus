@@ -17,6 +17,7 @@ class Conversation(Base):
     prompt_profile_id = Column(UUID(as_uuid=True), ForeignKey("prompt_profiles.id"), nullable=True)
     prompt_profile = relationship("PromptProfile")
     knowledge_sources = relationship("KnowledgeSource", back_populates="conversation")
+    config = Column(String, nullable=True)
 
 class Message(Base):
     __tablename__ = "messages"

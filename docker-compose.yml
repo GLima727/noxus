@@ -18,6 +18,11 @@ services:
 
   db:
     image: postgres:15
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped #will always try to restart the container db if it fails
     environment:
       POSTGRES_USER: postgres
@@ -33,7 +38,8 @@ services:
       context: .
     command: ["pytest", "tests/"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/noxus_test
       - PYTHONPATH=/app

@@ -73,9 +73,15 @@ docker compose up --build
 
 ## Customization
 
-- Add your preprompts to `config/default_prompt.txt`
-- Add optional knowledge lines such as urls or custom information to `config/knowledge_sources.txt`
-- Change Groq model in `chat.py` (e.g., llama3-70b-8192)
+The chatbot supports different Groq model settings. Each new conversation is assigned to a configuration variant (`A`, `B`, etc.), and the chatbot's behavior changes accordingly.
+
+You can add as many variants as you want in `model_variants.json` to test different strategies — such as more verbose prompts, different temperature values, or using another LLM.
+
+Each variant contains:
+- `model`: the Groq model ID to use (e.g., `llama3-70b-8192`)
+- `temperature`, `frequency_penalty`, `presence_penalty`, `max_tokens`.
+- `system_prompt`: custom instructions for that group
+- `knowledge_sources`: a list of lines of context to inject at runtime
 
 
 ## Thought Process and Decisions

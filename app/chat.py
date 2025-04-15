@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from db.models import Conversation, KnowledgeSource, Message, PromptProfile
 
+import random
+import json
+
 load_dotenv()
 
 router = APIRouter()
@@ -26,8 +29,6 @@ client = Groq(api_key=GROQ_API_KEY)
 class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
-    max_length: int = 100
-    temperature: float = 0.7
 
 
 @router.post("/chat")
@@ -54,9 +55,12 @@ async def chat(req: ChatRequest):
             db.refresh(conversation)
             print(f"🆕 Created new conversation {conversation.id}")
         
+        #Choose 
+        conversation.config = 'A'
 
         # Add default prompt and knowledge sources
-        config_history = addConfigurations(db, conversation)
+        config_history = addConfigurations(db, conversation, conversation.config)
+
         print(f"🧩 Added configurations to conversation {conversation.id}")
 
         user_msg = Message(
@@ -78,18 +82,7 @@ async def chat(req: ChatRequest):
         ]
 
         # Send the request to the Groq API
-        try:
-            completion = client.chat.completions.create(
-                model="llama3-70b-8192",
-                messages=history,
-                temperature=req.temperature,
-                max_tokens=req.max_length,
-                top_p=1,
-                stream=False,
-            )
-        except Exception as e:
-            print(f"❌ Error calling Groq API: {e}")
-            raise HTTPException(status_code=502, detail="Groq API failed. Please try again.")
+        completion = create_groq_model(history, conversation.config)
     
         bot_reply = completion.choices[0].message.content
         print(f"🤖 Bot reply: {bot_reply}")
@@ -152,16 +145,22 @@ async def submit_feedback(
         db.close()
 
 
-def addConfigurations(db, conversation, prompt_path="config/default_prompt.txt", sources_path="config/knowledge_sources.txt"):
+def addConfigurations(db, conversation, variant):
     system_context = []
 
-    # Read default prompt from file
-    with open(prompt_path, "r") as f:
-        prompt_text = f.read().strip()
+    # Load group-specific model config including prompt and knowledge sources
+    with open("config/model_variants.json") as f:
+        MODEL_CONFIGS = json.load(f)
 
+    config = MODEL_CONFIGS.get(variant)
+    if not config:
+        raise ValueError(f"No configuration '{variant}'")
+
+    # Load and assign default prompt profile
+    prompt_text = config.get("system_prompt")
     prompt = db.query(PromptProfile).filter_by(system_prompt=prompt_text).first()
     if not prompt:
-        prompt = PromptProfile(name="Default Prompt", system_prompt=prompt_text)
+        prompt = PromptProfile(name=f"Prompt for configuration {variant}", system_prompt=prompt_text)
         db.add(prompt)
         db.commit()
         db.refresh(prompt)
@@ -176,18 +175,14 @@ def addConfigurations(db, conversation, prompt_path="config/default_prompt.txt",
         "content": prompt.system_prompt
     })
 
-    # Read knowledge sources from file
-    with open(sources_path, "r") as f:
-        sources = [line.strip() for line in f if line.strip()]
-
-    # Add default prompt for knowledge sources
+    # Load knowledge sources directly from config JSON
+    sources = config.get("knowledge_sources", [])
     if sources:
         system_context.append({
             "role": "system",
             "content": "The following sources are for your knowledge context:"
         })
 
-    # Add each knowledge source to the database and system context
     for src in sources:
         ks = KnowledgeSource(content=src, conversation_id=conversation.id)
         db.add(ks)
@@ -200,3 +195,26 @@ def addConfigurations(db, conversation, prompt_path="config/default_prompt.txt",
     print(f"📚 Attached {len(sources)} knowledge sources to conversation {conversation.id}")
 
     return system_context
+
+
+def create_groq_model(history, variant):
+
+    # Load model variants from JSON config
+    with open("config/model_variants.json") as f:
+        MODEL_CONFIGS = json.load(f)
+
+    config = MODEL_CONFIGS.get(variant)
+
+    try:
+        completion = client.chat.completions.create(
+            messages=history,
+            max_tokens=config["max_tokens"],
+            stream=False,
+            model=config["model"],
+            temperature=config["temperature"],
+            frequency_penalty=config["frequency_penalty"],
+        )
+        return completion
+    except Exception as e:
+        print(f"❌ Error calling Groq API config {variant}: {e}")
+        raise

@@ -2,7 +2,7 @@ import os
 
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import chat
@@ -21,6 +21,10 @@ FRONTEND_PATH = os.getenv("FRONTEND_PATH", "frontend")
 
 app.mount("/static", StaticFiles(directory=FRONTEND_PATH), name="static")
 
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/chat")
 
 @app.get("/chat", response_class=FileResponse)
 def serve_chat_page():

@@ -35,3 +35,4 @@ def init_db():
             time.sleep(2)
     else:
         raise RuntimeError("❌ Could not connect to the database after multiple attempts.")
+    
