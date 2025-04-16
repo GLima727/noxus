@@ -138,3 +138,10 @@ Execute this command as the app is running:
 ```bash
 docker compose exec app python app/scripts/evaluate.py
 ```
+
+## Adaptive Learning
+
+The chatbot implements an adaptive learning mechanism that improves its behavior in real time based on user feedback.
+
+After each bot response, users can give thumbs up/down or provide free-form feedback.
+When feedback is give, it is immediatly used to update and refine the existing chatbot's system prompt, reinforcing helpful patterns when feedback is positive and avoiding undesired behavior when feedback is negative. 

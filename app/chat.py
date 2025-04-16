@@ -55,13 +55,13 @@ async def chat(req: ChatRequest):
             db.refresh(conversation)
             print(f"🆕 Created new conversation {conversation.id}")
         
-        # Choose model config variant 
-        conversation.config = os.getenv("DEFAULT_MODEL_GROUP", "A")
+            # Choose model config variant 
+            conversation.config = os.getenv("DEFAULT_MODEL_GROUP", "A")
 
-        # Add default prompt and knowledge sources
-        config_history = addConfigurations(db, conversation, conversation.config)
+            # Add default prompt and knowledge sources
+            addConfigurations(db, conversation, conversation.config)
 
-        print(f"🧩 Added configurations to conversation {conversation.id}")
+            print(f"🧩 Added configurations to conversation {conversation.id}")
 
         user_msg = Message(
             conversation_id=conversation.id,
@@ -71,6 +71,9 @@ async def chat(req: ChatRequest):
         db.add(user_msg)
         db.commit()
         print(f"💾 Saved user message to conversation {conversation.id}")
+
+
+        config_history = create_config_history(conversation)
 
         # Build full message history (including system context)
         history = config_history + [
@@ -113,37 +116,6 @@ async def chat(req: ChatRequest):
         db.close()
         print("🔚 DB session closed")
 
-@router.patch("/feedback")
-async def submit_feedback(
-    message_id: str = Body(...),
-    thumbs_up: Optional[bool] = Body(None),
-    thumbs_down: Optional[bool] = Body(None),
-    feedback_text: Optional[str] = Body(None)
-):
-    db = SessionLocal()
-    try:
-        message = db.query(Message).filter_by(id=message_id).first()
-        if not message:
-            raise HTTPException(status_code=404, detail="Message not found")
-
-        if thumbs_up is not None:
-            message.thumbs_up = thumbs_up
-        if thumbs_down is not None:
-            message.thumbs_down = thumbs_down
-        if feedback_text:
-            message.feedback_text = feedback_text
-
-        db.commit()
-        return {"success": True, "message_id": message_id}
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
-
 
 def addConfigurations(db, conversation, variant, config_path="config/model_variants.json"):
     system_context = []
@@ -169,32 +141,47 @@ def addConfigurations(db, conversation, variant, config_path="config/model_varia
     db.commit()
     print(f"🧠 Attached PromptProfile {prompt.id} to conversation {conversation.id}")
 
-    # Add prompt to system context
-    system_context.append({
-        "role": "system",
-        "content": prompt.system_prompt
-    })
 
     # Load knowledge sources directly from config JSON
     sources = config.get("knowledge_sources", [])
+
+
+    for src in sources:
+        ks = KnowledgeSource(content=src, conversation_id=conversation.id)
+        db.add(ks)
+
+    db.commit()
+    print(f"📚 Attached {len(sources)} knowledge sources to conversation {conversation.id}")
+
+    return 
+
+def create_config_history(conversation):
+    system_context = []
+
+    # Add the system prompt from the associated profile
+    if conversation.prompt_profile:
+        system_context.append({
+            "role": "system",
+            "content": conversation.prompt_profile.system_prompt
+        })
+
+    # Fetch all knowledge sources linked to this conversation
+    sources = conversation.knowledge_sources 
+
     if sources:
         system_context.append({
             "role": "system",
             "content": "The following sources are for your knowledge context:"
         })
 
-    for src in sources:
-        ks = KnowledgeSource(content=src, conversation_id=conversation.id)
-        db.add(ks)
-        system_context.append({
-            "role": "system",
-            "content": src
-        })
-
-    db.commit()
-    print(f"📚 Attached {len(sources)} knowledge sources to conversation {conversation.id}")
+        for src in sources:
+            system_context.append({
+                "role": "system",
+                "content": src.content
+            })
 
     return system_context
+
 
 
 def create_groq_model(history, variant):

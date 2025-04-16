@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import chat
 from app import talks
+from app import feedback
 
 from db.init_db import init_db
 
@@ -16,6 +17,8 @@ init_db()
 app = FastAPI()
 app.include_router(chat.router)
 app.include_router(talks.router)
+app.include_router(feedback.router)
+
 
 FRONTEND_PATH = os.getenv("FRONTEND_PATH", "frontend")
 

@@ -7,30 +7,32 @@ from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from db.models import Conversation, Message, PromptProfile
 from groq import Groq
-from evaluate import evaluate_conversations
+from .evaluate import evaluate_conversations
 
 load_dotenv()
 groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def get_feedback_prompt(convo_text, current_prompt):
-    if not convo_text:
-        raise ValueError("convo_text is required")
-    if not current_prompt:
-        raise ValueError("current_prompt is required")
     return f"""
-        You are an expert prompt engineer.
+            You are an expert in prompt engineering.
 
-        Given the current system prompt and the following conversation, suggest an improved version of the prompt to make future responses more clear, helpful, and accurate.
-        Only return the improved prompt without explanations.
+            You are given a system prompt used by a chatbot and a sample conversation. Your task is to make small but meaningful refinements to the system prompt, so that future responses align better with the user’s needs — as demonstrated in the conversation — while preserving the original intention of the prompt.
 
-        Current system prompt:
-        """ + f"""
-        {current_prompt}
+            Please return an improved version of the prompt that:
 
-        Conversation:
-        {convo_text}
-        """
+            1. Maintains the original role and boundaries of the assistant.
+            2. Better handles the type of interaction shown (e.g., emotional support, clarifications, technical detail).
+            3. Is only adjusted if the conversation shows real room for improvement.
+
+            Current system prompt:
+            \"\"\"{current_prompt}\"\"\"
+
+            Conversation sample:
+            {convo_text}
+
+            Return only the improved system prompt (no explanations).
+            """
 
 # Update the system prompt of conversations with a lower rating than 6
 def refine_prompts(evaluations):
