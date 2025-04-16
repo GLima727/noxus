@@ -160,7 +160,7 @@ def addConfigurations(db, conversation, variant, config_path="config/model_varia
     prompt_text = config.get("system_prompt")
     prompt = db.query(PromptProfile).filter_by(system_prompt=prompt_text).first()
     if not prompt:
-        prompt = PromptProfile(name=f"Prompt for configuration {variant}", system_prompt=prompt_text)
+        prompt = PromptProfile(system_prompt=prompt_text)
         db.add(prompt)
         db.commit()
         db.refresh(prompt)
