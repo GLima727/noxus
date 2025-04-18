@@ -25,17 +25,12 @@ An LLM-powered chatbot built with FastAPI, Groq API (LLaMA 3 70B), and PostgreSQ
 
 4. Add it to your .env file as GROQ_API_KEY
 
-5. Alternatively, you can use my key:
-
-```
-GROQ_API_KEY=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
-```
 ## Environment Setup
 
 Create a `.env` file in the root directory:
 
 ```env
-GROQ_API_KEY = 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
+GROQ_API_KEY = groq_key
 DATABASE_URL = postgresql://postgres:postgres@db:5432/noxus
 FRONTEND_PATH = frontend
 DEFAULT_MODEL_GROUP=A
