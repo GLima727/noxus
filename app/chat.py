@@ -120,7 +120,7 @@ async def chat(req: ChatRequest):
 def addConfigurations(db, conversation, variant, config_path="config/model_variants.json"):
     system_context = []
 
-    # Load group-specific model config including prompt and knowledge sources
+    # Load model config including prompt and knowledge sources
     with open(config_path) as f:
         MODEL_CONFIGS = json.load(f)
 

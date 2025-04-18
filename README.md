@@ -5,10 +5,9 @@ An LLM-powered chatbot built with FastAPI, Groq API (LLaMA 3 70B), and PostgreSQ
 ## Features
 
 -  Fast, streaming LLM responses using Groq's API
--  Persistent conversations with PostgreSQL
 -  Preprompt configuration & knowledge source injection
 -  User feedback with thumbs up/down + custom comments
--  Fully isolated test environment
+-  Adaptive behavior based on user feedback
 
 ## Requirements
 
@@ -36,9 +35,10 @@ GROQ_API_KEY=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
 Create a `.env` file in the root directory:
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@db:5432/noxus
-GROQ_API_KEY=your-groq-api-key
-FRONTEND_PATH=frontend
+GROQ_API_KEY = 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
+DATABASE_URL = postgresql://postgres:postgres@db:5432/noxus
+FRONTEND_PATH = frontend
+DEFAULT_MODEL_GROUP=A
 ```
 
 ## Running the App
@@ -62,7 +62,8 @@ docker compose up --build
 
 ```
 ├── app/              # FastAPI routes & logic
-├── db/               # SQLAlchemy models & DB init
+├── app/scripts       # Scripts for evaluation and configuration refinement  
+├── db/               # Database models & DB init
 ├── frontend/         # HTML/CSS/JS static assets
 ├── config/           # Default prompts & knowledge sources
 ├── tests/            # Unit & integration tests
@@ -73,25 +74,25 @@ docker compose up --build
 
 ## Customization
 
-The chatbot supports different Groq model settings. Each new conversation is assigned to a configuration variant (`A`, `B`, etc.), and the chatbot's behavior changes accordingly.
+The chatbot supports different Groq model settings. Each new conversation is assigned to a configuration variant (`A`, `B`, etc.), and the chatbot's behavior changes accordingly. The model variant is chosen in the `.env` file in `DEFAULT_MODEL_GROUP=`. The default option is currently `A`
 
-You can add as many variants as you want in `model_variants.json` to test different strategies — such as more verbose prompts, different temperature values, or using another LLM.
+You can add as many variants as you want in `model_variants.json` to test different strategies, such as more verbose prompts, different temperature values, different tones, or using another LLM as long as it is available in the Groq API.
 
 Each variant contains:
 - `model`: the Groq model ID to use (e.g., `llama3-70b-8192`)
 - `temperature`, `frequency_penalty`, `presence_penalty`, `max_tokens`.
 - `system_prompt`: custom instructions for that group
-- `knowledge_sources`: a list of lines of context to inject at runtime
+- `knowledge_sources`: could be URLs, personal information or extra custom instructions that are added to the context.
 
 
 ## Thought Process and Decisions
 
-This project was my first time working with large language models (LLMs), and I wasn’t sure where to start. Downloading a full LLM to run locally wasn’t an option due to limited memory on my machine, and I wanted to avoid token-based costs or paid APIs. After researching free LLM APIs, I came across Groq — which offered fast inference with a generous free tier.
+This project was my first time working with LLMs. Downloading a full LLM to run locally wasn’t an option due to the limited memory of my machine, and I wanted to avoid token-based costs or paid APIs. After researching free LLM APIs, I came across Groq, which offered fast inference with a generous free tier.
 
 As for the database, I chose PostgreSQL because I had already worked with it on multiple projects and was comfortable using it. It provided the relational structure and flexibility I needed for storing conversations, feedback, and configurations.
 
-Managing the Groq API was quite straight-forward. The first obstacle was providing context to the conversation.
-To address this, I opted on creating a database stucture that would facilitate providing a history to the conversation, comprising of multiple messages and providing the necessary context to the LLM.
+Managing the Groq API was quite straight-forward. The first obstacle was providing context for the conversation.
+To address this, I opted on creating a database structure that would facilitate providing a history to the conversation, comprising of multiple messages and providing the necessary context to the LLM. 
 
 The database is structured in a simple manner:
 
@@ -101,11 +102,11 @@ The database is structured in a simple manner:
 - KnowledgeSource: Additional context lines injected into the start of a conversation. A conversation can have multiple.
 
 With this structure, each conversation can contain many messages, but each message belongs to one conversation.
-Prompt profiles and knowledge sources are optional but useful for context and control. For their management, I opted for a simple solution. These prompts and knowledge sources are written in text files on the config folder, so that when the conversation is being created, these are added automatically. 
+Prompt profiles and knowledge sources are optional but useful for context and control. For their management, I opted for a simple solution. These prompts and knowledge sources are written in text files in the config folder, so that when the conversation is being created, these are added automatically. 
 
 For the frontend I opted on using a simple html, css and javascript combination.
 
-The application has two main user-facing pages:
+The application has two main user pages:
 
 - /chat: This is the primary chatbot interface. It provides a simple UI where users can interact with the LLM-powered assistant, receive responses, and optionally provide feedback. Each time the page is refreshed, a new conversation is generated.
 
@@ -139,9 +140,21 @@ Execute this command as the app is running:
 docker compose exec app python app/scripts/evaluate.py
 ```
 
-## Adaptive Learning
+## Prompt Refinement
+
+To enhance the chatbot's adaptability, the platform includes a script for a **prompt refinement system**. This mechanism uses conversation evaluations and user feedback to continuously improve the system prompt associated with each chatbot configuration.
+
+Once a conversation receives a **low evaluation score** (currently less than 6), the script uses a separate LLM to rewrite the prompt in a way that better fits the observed user needs, based on the original system prompt and full conversation history. It makes sure to preserve the original role and only make small and purposeful adjustments.
+
+This script is used after evaluations have been generated. To manually refine prompts based on the latest evaluations run this command:
+
+```bash
+docker compose exec app python app/scripts/refine_prompts.py
+```
+
+## Automatic Adaptive Learning
 
 The chatbot implements an adaptive learning mechanism that improves its behavior in real time based on user feedback.
 
 After each bot response, users can give thumbs up/down or provide free-form feedback.
-When feedback is give, it is immediatly used to update and refine the existing chatbot's system prompt, reinforcing helpful patterns when feedback is positive and avoiding undesired behavior when feedback is negative. 
+When feedback is given, it is immediately used to update and refine the existing chatbot's system prompt, reinforcing helpful patterns when feedback is positive and avoiding undesired behavior when feedback is negative. 

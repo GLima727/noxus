@@ -1,5 +1,3 @@
-# scripts/refine_prompts.py
-
 import os
 import json
 from dotenv import load_dotenv
@@ -41,7 +39,7 @@ def refine_prompts(evaluations):
 
     for eval in evaluations:
         if eval["score"] is None or eval["score"] >= 6:
-            continue  # Only refine for low scores
+            continue # Skip if the score is None or 6 or higher
 
         convo = db.query(Conversation).filter_by(id=eval["conversation_id"]).first()
         if not convo or not convo.prompt_profile:

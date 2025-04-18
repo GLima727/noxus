@@ -47,7 +47,7 @@ def test_add_configurations(db_session):
     db_session.refresh(conversation)
 
     # Override your function to read the test file
-    system_context = addConfigurations(db_session, conversation, "D", config_path="config/test_model_variants.json")
+    addConfigurations(db_session, conversation, "D", config_path="config/test_model_variants.json")
 
     sources = db_session.query(KnowledgeSource).filter_by(conversation_id=conversation.id).all()
     print([s.content for s in sources])
